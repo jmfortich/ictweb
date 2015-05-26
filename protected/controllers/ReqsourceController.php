@@ -1,0 +1,223 @@
+<?php
+
+class ReqsourceController extends Controller
+{
+	/**
+	 * @var string the default layout for the views. Defaults to '//layouts/column2', meaning
+	 * using two-column layout. See 'protected/views/layouts/column2.php'.
+	 */
+	public $layout='//layouts/column2';
+
+	/**
+	 * @return array action filters
+	 */
+	public function filters()
+	{
+		return array(
+			'accessControl', // perform access control for CRUD operations
+			'postOnly + delete', // we only allow deletion via POST request
+		);
+	}
+
+	/**
+	 * Specifies the access control rules.
+	 * This method is used by the 'accessControl' filter.
+	 * @return array access control rules
+	 */
+	public function accessRules()
+	{
+		return array(
+			array('allow',  // allow all users to perform 'index' and 'view' actions
+				'actions'=>array('index','view'),
+				'users'=>array('*'),
+			),
+			array('allow', // allow authenticated user to perform 'create' and 'update' actions
+					'actions'=>array('create','update','admin'),
+					'expression'=>'Yii::app()->session["role"]==3',
+			),	
+			array('allow', // allow admin user to perform 'admin' and 'delete' actions
+				'actions'=>array('delete'),
+				'expression'=>'Yii::app()->session["isAdmin"]==1',
+			),
+			array('deny',  // deny all users
+				'users'=>array('*'),
+			),
+		);
+	}
+
+	/**
+	 * Displays a particular model.
+	 * @param integer $id the ID of the model to be displayed
+	 */
+	public function actionView($id)
+	{
+		if (Yii::app()->request->isAjaxRequest) {			
+			Yii::app()->clientScript->scriptMap['jquery.js'] = false;
+			
+			//Yii::app()->clientscript->scriptMap['jquery-ui.min.js'] = false;
+			$this->renderPartial('view', array(
+					'model' => $this->loadModel($id),
+			), false, true);
+			
+			if (!empty($_GET['asDialog'])){
+				echo CHtml::script('$("#dlg-detail").dialog("open");');
+				echo CHtml::script('$(".ui-dialog-titlebar").hide();');
+			}	
+			Yii::app()->end();
+		}
+		else{
+			$this->render('view',array(
+				'model'=>$this->loadModel($id),
+			));
+		}
+	}
+
+	/**
+	 * Creates a new model.
+	 * If creation is successful, the browser will be redirected to the 'view' page.
+	 */
+	public function actionCreate()
+	{
+		$model=new Reqsource;
+
+		// Uncomment the following line if AJAX validation is needed
+		$this->performAjaxValidation($model);
+
+		if(isset($_POST['Reqsource']))
+		{
+			$model->attributes=$_POST['Reqsource'];
+			if($model->save()){
+				Yii::app()->user->setFlash('info','New source was successfully added!');
+				$this->redirect(array('admin'));
+			}
+		}
+
+		if (Yii::app()->request->isAjaxRequest) {
+			Yii::app()->clientScript->scriptMap['jquery.js'] = false;
+			
+			$this->renderPartial('create', array(
+					'model' => $model,
+			), false, true);
+			
+			if (!empty($_GET['asDialog'])){
+				echo CHtml::script('$("#dlg-detail").dialog("open");');
+				echo CHtml::script('$(".ui-dialog-titlebar").hide();');
+			}
+			Yii::app()->end();
+		}
+		else{	
+			$this->render('create',array(
+				'model'=>$model,
+			));
+		}	
+	}
+
+	/**
+	 * Updates a particular model.
+	 * If update is successful, the browser will be redirected to the 'view' page.
+	 * @param integer $id the ID of the model to be updated
+	 */
+	public function actionUpdate($id)
+	{
+		$model=$this->loadModel($id);
+
+		// Uncomment the following line if AJAX validation is needed
+		$this->performAjaxValidation($model);
+
+		if(isset($_POST['Reqsource']))
+		{
+			$model->attributes=$_POST['Reqsource'];
+			if($model->save()){
+				Yii::app()->user->setFlash('info','Source was successfully updated!');				
+				$this->redirect(array('admin'));
+			}
+		}
+
+		if (Yii::app()->request->isAjaxRequest) {
+			Yii::app()->clientScript->scriptMap['jquery.js'] = false;
+			
+			$this->renderPartial('update', array(
+					'model' => $model,
+			), false, true);
+			
+			if (!empty($_GET['asDialog'])){				
+				echo CHtml::script('$("#dlg-detail").dialog("open");');
+				echo CHtml::script('$(".ui-dialog-titlebar").hide();');
+			}
+			Yii::app()->end();
+		}
+		else{	
+			$this->render('update',array(
+				'model'=>$model,
+			));
+		}	
+	}
+
+	/**
+	 * Deletes a particular model.
+	 * If deletion is successful, the browser will be redirected to the 'admin' page.
+	 * @param integer $id the ID of the model to be deleted
+	 */
+	public function actionDelete($id)
+	{
+		$this->loadModel($id)->delete();
+
+		// if AJAX request (triggered by deletion via admin grid view), we should not redirect the browser
+		if(!isset($_GET['ajax']))
+			$this->redirect(isset($_POST['returnUrl']) ? $_POST['returnUrl'] : array('admin'));
+	}
+
+	/**
+	 * Lists all models.
+	 */
+	public function actionIndex()
+	{
+		$dataProvider=new CActiveDataProvider('Reqsource');
+		$this->render('index',array(
+			'dataProvider'=>$dataProvider,
+		));
+	}
+
+	/**
+	 * Manages all models.
+	 */
+	public function actionAdmin()
+	{
+		$model=new Reqsource('search');
+		$model->unsetAttributes();  // clear any default values
+		if(isset($_GET['Reqsource']))
+			$model->attributes=$_GET['Reqsource'];
+
+		$this->render('admin',array(
+			'model'=>$model,
+		));
+	}
+
+	/**
+	 * Returns the data model based on the primary key given in the GET variable.
+	 * If the data model is not found, an HTTP exception will be raised.
+	 * @param integer $id the ID of the model to be loaded
+	 * @return Reqsource the loaded model
+	 * @throws CHttpException
+	 */
+	public function loadModel($id)
+	{
+		$model=Reqsource::model()->findByPk($id);
+		if($model===null)
+			throw new CHttpException(404,'The requested page does not exist.');
+		return $model;
+	}
+
+	/**
+	 * Performs the AJAX validation.
+	 * @param Reqsource $model the model to be validated
+	 */
+	protected function performAjaxValidation($model)
+	{
+		if(isset($_POST['ajax']) && $_POST['ajax']==='reqsource-form')
+		{
+			echo CActiveForm::validate($model);
+			Yii::app()->end();
+		}
+	}
+}
